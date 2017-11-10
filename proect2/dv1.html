@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>DV Project2</title>
+    <style>
+        html, body, #map-canvas {
+            height: 100%;
+            margin: 0px;
+            padding: 0px;
+        }
+
+        #panel {
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            margin-left: -180px;
+            z-index: 5;
+            background-color: #fff;
+            padding: 5px;
+            border: 1px solid #999;
+        }
+		#map1, #pano {
+            float: left;
+            height: 100%;
+            width: 45%;
+        }
+    </style>
+	<style>
+        #directions-panel {
+            height: 100%;
+            float: right;
+            width: 390px;
+            overflow: auto;
+        }
+
+        #map-canvas {
+            margin-right: 400px;
+        }
+
+        <!--#control {
+            background: #fff;
+            padding: 5px;
+            font-size: 14px;
+            font-family: Arial;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 2px rgba(33, 33, 33, 0.4);
+            display: none;
+        }-->
+
+        @media print {
+            #map-canvas {
+                height: 500px;
+                margin: 0;
+            }
+
+            #directions-panel {
+                float: none;
+                width: auto;
+            }
+        }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+    <script>
+    
+
+        var directionsDisplay;
+
+        // Create a Google Directions Service object. 
+        var directionsService = new google.maps.DirectionsService();
+        var map;
+		var addr;
+		var address;
+
+        // This function is called when the web page is loaded.
+        function initialize() {
+            // Create an empty DirectionRenderer. 
+            directionsDisplay = new google.maps.DirectionsRenderer({
+                map: map,
+                panel: document.getElementById('directions-panel'),
+                draggable: true
+            });
+            
+            var fusionTableID = '1FjVvT2lxm_meECyU7Mn1TaZOvvwu3rJnpZztPqvr';
+            var locationColumn = 'address';
+			addr=document.getElementById('start');
+
+            // Center the map at Atlanta
+            var lat_e = 33.747895;
+            var lng_e = -84.39033;
+
+
+                 
+      		var infoWindow = new google.maps.InfoWindow();
+
+            var mapOptions = {
+                zoom: 13,
+                mapTypeId: google.maps.MapTypeId.ROADMAP,
+                center: { lat: lat_e, lng: lng_e },
+                suppressinfowindow:true,
+				streetViewControl: true
+            }
+			
+            
+             var layer = new google.maps.FusionTablesLayer({
+                query: {
+                    // You must select a "location" type column from the Fusion Table. 
+                    // The "location" column can be either a single column with geocodable full address or
+                    // two column latitude-longitude pair. 
+                    // In this example, the column is full street address. 
+                    // If you have a spreadsheet where street addresses are separated into multiple columns, 
+                    // you need to combine them into one column. See this web page for more details:
+                    // https://support.google.com/fusiontables/answer/175922?hl=en.
+                    select: 'address',
+                    from: '1FjVvT2lxm_meECyU7Mn1TaZOvvwu3rJnpZztPqvr'
+					
+                },
+                styles: [
+                    // Specify the default icon type.
+                {
+                     markerOptions: { iconName: 'grn_circle' }
+                }]
+                 
+            });
+
+            layer.addListener('click', function (event) {
+                // The "event" object contains lots of information about the fusion table.
+              	//  infoWindow.setPosition(event.latLng);
+
+                // This shows how to retrieve a cell value from the fusion table. 
+               	 infoWindow.setContent(event.row.ZipCode.value);
+               	 address = event.row.Address.value;
+               	// infoWindow.open(map);
+				
+             
+            });
+		
+           
+          
+            google.maps.event.addDomListener(document.getElementById('radius'),
+            'change', function () {
+                // Convert miles to meters
+                var meters = parseInt(this.value, 10) * 1609.34;
+                layer.setOptions({
+                    query: {
+                        select: locationColumn,
+                        from: fusionTableID,
+                        where: 'ST_INTERSECTS(Lat, ' +
+                            'CIRCLE(LATLNG(' + lat_e + ', ' + lng_e + '), ' + meters + '))'
+                    }
+                });
+            });
+            
+             map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+            // The direction renderer is associated with the map, but nothing is drawn. 
+            directionsDisplay.setMap(map);
+            layer.setMap(map);
+			 
+		 var panorama = new google.maps.StreetViewPanorama(
+                document.getElementById('directions-panel'), {
+                    position: {lat: 33.747895, lng: -84.39033},
+                    pov: {
+                        heading: 34,
+                        pitch: 10
+                    }
+                });
+            map.setStreetView(panorama);	
+
+        }
+        // This function is called when the drop down menu is selected.   
+        function calcRoute() {
+            var start = document.getElementById('start').value;
+            var end = address;
+			if(!start)
+			window.alert('Invalid input' );
+			
+			if(!end)
+			window.alert('Invalid input' );
+			
+            // Construct a direction request. 
+            var request = {
+                origin: start,
+                destination: end,
+                // You can add way points, if necessary. 
+                waypoints: [
+                  {
+                      location: "1340 Boulevard SE, GA, 30315",
+                      stopover: true
+                  }],
+                optimizeWaypoints: true,
+
+                avoidHighways: false,
+                avoidTolls: false,
+
+                provideRouteAlternatives: false,
+
+                travelMode: google.maps.DirectionsTravelMode.DRIVING,
+
+                unitSystem: google.maps.UnitSystem.IMPERIAL,
+
+                region: 'us'
+            };
+           // Ask Google Directions Service to send a route back. 
+           directionsService.route(request, function (response, status) {
+                if (status == google.maps.DirectionsStatus.OK) {
+                    // Now the route is drawn on the map. 
+                    directionsDisplay.setDirections(response);
+                }
+            });
+			
+        }
+
+        google.maps.event.addDomListener(window, 'load', initialize);
+	
+    </script>
+</head>
+<body>
+
+   <!--<div id="pano"></div>-->
+	<!--<div id="map"></div>-->
+   <!-- <script>
+
+        function initialize() {
+            var atlanta = { lat: 33.747895, lng:  -84.39033 };
+            var map = new google.maps.Map(document.getElementById('map-canvas'), {
+                center: atlanta,
+                zoom: 14
+            });
+            var panorama = new google.maps.StreetViewPanorama(
+                document.getElementById('directions-panel'), {
+                    position: atlanta,
+                    pov: {
+                        heading: 34,
+                        pitch: 10
+                    }
+                });
+            map.setStreetView(panorama);
+        }
+		</script>-->
+		
+    <div id="panel">
+
+        <select id="radius">
+        <option value=" ">Select Miles</option>
+        <option value="1">1 mile</option>
+        <option value="3">3 miles</option>
+        <option value="5">5 miles</option>
+
+    </select><br/><br/>
+		<a href="project2_thiru.html"><button>Marker Cluster</button></a>
+	
+	<a href="dv1.html"><button>Street View</button></a> <br/>
+	
+
+    </div>
+	 
+		
+		  
+
+	<div id="directions-panel"></div>
+    <div id="map-canvas"></div>
+</body>
+</html>

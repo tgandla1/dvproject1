@@ -1,0 +1,177 @@
+<html>
+<head>
+    <title>Real Estate Data Visualization</title>
+    <script type="text/javascript" src="http://www.google.com/jsapi"></script>
+    <script type="text/javascript">        
+        google.load('visualization', '1.0', { 'packages': ['controls'] });
+		// This loads all the related packages for visualization.
+        google.setOnLoadCallback(queryData);
+
+        // Here we are sending the query to the google Spreadsheet that contains the Real Estate data.  
+        function queryData() {
+            // Don't forget to add "/gviz/tq?tq=" to the end of the spreadsheet URL. 
+            var query = new google.visualization.Query(
+                'https://docs.google.com/spreadsheets/d/1PlT8k6qXsCkOCEEJFn7apKYgDunLi1Lzmnmo_AKQBXc/edit?pli=1#gid=0/gviz/tq?tq=');
+			query.setQuery('select * LIMIT 55 OFFSET 15');
+				// Here I am taking data from 15th row and until 70th row.
+            query.send(handleQueryResponse);
+        }
+
+        // Here we are calling the function that receives data from the google Spreadsheet.
+        function handleQueryResponse(response) {
+            if (response.isError()) {
+                alert('Error' + response.getMessage() + ' '
+                 + response.getDetailedMessage());
+                return;
+            }
+			// This will check for whether there is any error.
+
+            // If there is no error, retrieve data from the google Spreadsheet response. 
+            var dataTable = response.getDataTable();
+
+            // Here we are creating table chart
+            var tableChart = new google.visualization.ChartWrapper({
+                'chartType': 'Table',
+                'containerId': 'tableChart1',
+				'options': {'width': 950,'height': 200},
+				
+            });
+			//Here we are creating column chart
+			
+			var ColumnChart = new google.visualization.ChartWrapper({
+                'chartType': 'ColumnChart',
+                'containerId': 'ColumnChart1',
+				'view': { 'columns': [0,6,3,5] },
+				'options': {
+				 hAxis: { title: 'Fireplaces, Storeys and No.Baths  of each house' },
+				 'isStacked': true,
+				 legend: {position : 'right'},
+				'width': 950,'height': 200}
+            });
+			//Here we are creating line chart
+			
+			  var LineChart = new google.visualization.ChartWrapper({
+                'chartType': 'LineChart',
+                'containerId': 'LineChart1',
+				'view': { 'columns': [0,9,7,8] },
+				'options': {
+				 hAxis: { title: 'Building, Land Value and Total Value in $ of each House' },
+				 legend: {position : 'right'},
+				'width': 950,'height': 200}
+            });
+			
+                 
+
+   
+
+            // Here we are creating control for year
+			
+			var YearFilter = new google.visualization.ControlWrapper({
+                'width': 100,
+                'height': 200,
+                'controlType': 'NumberRangeFilter',
+                'containerId': 'YearFilter1',
+                'options': {
+                    'filterColumnIndex': '1',
+                    ui: { 'labelStacking': 'vertical', 'label': 'YEAR RANGE' }
+                }
+            });
+			
+            // Here we are creating control for square feet
+			
+            var SqFtFilter = new google.visualization.ControlWrapper({
+                'controlType': 'NumberRangeFilter',
+                'containerId': 'SqFtFilter1',
+                'options': {
+                    'filterColumnIndex': '2',
+                    'ui': {
+                        'labelStacking': 'vertical',
+                        'allowTyping': true,
+                        'allowMultiple': true,
+						'label': 'SQUARE FEET SELECTION'
+                    }
+                }
+            });
+			
+			// Here we are creating control for acre's
+			
+			  var AcreFilter = new google.visualization.ControlWrapper({
+                'controlType': 'NumberRangeFilter',
+                'containerId': 'AcreFilter1',
+                'options': {
+                    'filterColumnIndex': '4',
+                    'ui': {
+                        'labelStacking': 'vertical',
+                        'allowTyping': true,
+                        'allowMultiple': true,
+						'label': 'ACRE RANGE'
+                    }
+                }
+            });
+              // Here we are creating control for Number of fireplaces
+            var FirePlaceFilter = new google.visualization.ControlWrapper({
+                'controlType': 'CategoryFilter',
+                'containerId': 'FirePlaceFilter1',
+                'options': {
+                    'filterColumnIndex': '6',
+                    'ui': {
+                        'labelStacking': 'vertical',
+                        'allowTyping': false,
+                        'allowMultiple': true,
+						'label': 'NO.OF FIREPLACES'
+                    }
+                }
+            });
+
+				
+
+            // Here we are creating a dashboard
+            var dashboard = new google.visualization.Dashboard(document.getElementById('dashboard1'));
+
+            // Here we are binding controls with charts. 
+            dashboard.bind([YearFilter,SqFtFilter,AcreFilter,FirePlaceFilter],
+                        [tableChart,LineChart,ColumnChart]);
+
+            // Here we are drawing  the dashboard. 
+            dashboard.draw(dataTable);
+        }
+    </script>
+</head>
+
+<body>
+
+<!--Below all is for screen design-->
+    <h2><font color="blue">REAL ESTATE DATA VISUALIZATION</font></h2>
+    <div id="dashboard1">
+        <table>
+            <tr>
+                <td>
+                    <b><div id="YearFilter1" style="color:red;">
+                    </div></b>
+                    <br />
+                  
+					<b><div id="SqFtFilter1" style="color:red;">
+                    </div></b>
+                    <br /> 
+					<b><div id="AcreFilter1" style="color:red;">
+                    </div></b>
+                    <br /> 
+					 <b><div id="FirePlaceFilter1" style="color:red;">
+                    </div></b>
+                    <br />
+                </td>
+                <td>
+                    <div id="tableChart1" style="height: 200px; width: 950px; border-style: groove;">
+                    </div>
+                    
+					<div id="ColumnChart1" style="height: 200px; width: 950px; border-style: groove;">
+					
+                    </div>
+                    <div id="LineChart1" style="height: 200px; width: 950px; border-style: groove;">
+                    </div>					
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>
